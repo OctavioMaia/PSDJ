@@ -66,7 +66,6 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.function.*;
 
-
 public class Trans_Caixa_Exs {
     
     public static void memoryUsage() {
@@ -79,7 +78,16 @@ public class Trans_Caixa_Exs {
 		out.println("Memória Livre:" + runtime.freeMemory()/mByte);
 		out.println("Memoria Usada:" + (runtime.totalMemory() - runtime.freeMemory())/mByte);	
     }
-    
+
+    public static Comparator<TransCaixa> transPorData =
+            (TransCaixa tc1, TransCaixa tc2) -> {
+                LocalDateTime ldt1 = tc1.getData();
+                LocalDateTime ldt2 = tc2.getData();
+                if (ldt1.equals(ldt2)) return 0;
+                else if (ldt1.isBefore(ldt2)) return -1;
+                else return 1;
+            };
+
     public static TransCaixa strToTransCaixa(String linha) {
        //1
        double preco = 0.0; 
@@ -107,7 +115,7 @@ public class Trans_Caixa_Exs {
        catch(InputMismatchException | NumberFormatException e) { return null; }
        return TransCaixa.of(codTrans, codCaixa, preco, LocalDateTime.of(ano, mes, dia, hora, min, 0));    
     }
-   
+
     public static List<TransCaixa> setup(String nomeFich) {
       List<TransCaixa> ltc = new ArrayList<>();
       try (Stream<String> sTrans = Files.lines(Paths.get(nomeFich))) {
@@ -186,5 +194,32 @@ public class Trans_Caixa_Exs {
         out.println( "Info " + op2  +" "+ Crono.stop()*1000 + " ms");
 
         out.println("EX4");
+        //TODO
+
+        out.println("EX5");
+        SortedSet<TransCaixa> transOrdData = new TreeSet<>(transPorData);
+        transOrdData.addAll(ltc);
+        out.println(transOrdData.first() + " - " + transOrdData.last());
+
+        List<TransCaixa> transOrdData2 = ltc.stream().sorted(transPorData).collect(toList());
+        out.println(transOrdData2.get(0) + " - " + transOrdData2.get(transOrdData2.size()-1));
+
+        Supplier<SortedSet<TransCaixa>> supplier = () -> new TreeSet<>(transPorData);
+        SortedSet<TransCaixa> transOrdData3 = ltc.stream().collect(toCollection(supplier));
+        out.println(transOrdData3.first() + " - " + transOrdData3.last());
+
+        out.println("EX6");
+        Map<String, List<TransCaixa>> t500 = ltc.stream().sorted(transPorData).limit(500).collect(groupingBy(TransCaixa::getCaixa));
+        t500.forEach((cx, ltcx) -> out.println("Caixa " + cx + " #Trans: " + ltcx.size()));
+
+        out.println("EX7");
+        Map<String, Long> tabNumTransCaixa = ltc.stream().collect(groupingBy(TransCaixa::getCaixa, TreeMap::new, counting()));
+        tabNumTransCaixa.forEach( (cx, nt) -> out.println("Caixa: " + cx + " --> " + nt));
+
+        Map<String, Double> tabNumTransCaixa2 = ltc.stream().collect(groupingBy(TransCaixa::getCaixa, summingDouble(TransCaixa::getValor)));
+        tabNumTransCaixa2.forEach( (cx, nt) -> out.println("Caixa: " + cx + " --> " + nt));
+
+        out.println("EX8");
+
     }   
 }
